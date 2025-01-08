@@ -431,8 +431,8 @@ class Ui_MainWindow(object):
         self.centralwidget = QtWidgets.QWidget(parent=MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         layout = QtWidgets.QVBoxLayout(self.centralwidget)
-        font = QtGui.QFont("Courier New")
-        font.setPointSize(9)
+        font = QtGui.QFont("Arial")
+        font.setPointSize(10)
         self.row1Layout = QtWidgets.QHBoxLayout()
         self.sever_1 = QtWidgets.QGroupBox("版本", parent=self.centralwidget)
         self.sever_1_Layout = QtWidgets.QHBoxLayout(self.sever_1)
@@ -475,6 +475,7 @@ class Ui_MainWindow(object):
         self.import_box_Layout = QtWidgets.QGridLayout(self.import_box)
         self.checkbox = QtWidgets.QCheckBox(parent=self.centralwidget)
         self.checkbox.setText("启用")
+        self.checkbox.setFont(font)
         self.checkbox.move(20, 20)
         self.checkbox.stateChanged.connect(self.toggleButtons)
         self.toggleButtons(0)
@@ -511,6 +512,7 @@ class Ui_MainWindow(object):
         self.sql_box_Layout = QtWidgets.QHBoxLayout(self.sql_box)
         self.sql_file = QPushButton(parent=self.centralwidget)
         self.sql_file.setText("文件夹")
+        self.sql_file.setFont(font)
         self.sql_file.clicked.connect(self.select_file)
         self.sql_file.setEnabled(True)
         self.sql_box_Layout.addWidget(self.sql_file)
@@ -605,13 +607,10 @@ class Ui_MainWindow(object):
 
         self.timer = QTimer(self)
         self.timer.timeout.connect(lambda: self.updateRuntime(MainWindow))
-        # self.timer.start(10)  # 每 10 毫秒更新一次
 
         # 标志变量来判断是否需要更新时间
         self.isRunning = False
         self.elapsed_time = 0  # 记录已经经过的时间（单位为毫秒）
-
-
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def open_server_dialog(self):

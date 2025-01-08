@@ -1,113 +1,243 @@
+import sys
 import pymysql
 import concurrent.futures
 import queue
 import threading
-import signal
-import sys
+import json
+import time
+from PyQt5.QtWidgets import (
+    QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QTextEdit, QGroupBox
+)
+from PyQt5.QtCore import Qt, QThread, pyqtSignal
+from PyQt5.QtGui import QFont
 
-# 数据库连接配置
-db_configs = [
-    {'name': '都城1', 'host': '10.242.118.115', 'user': 'root', 'password': 'xq1CTaUKmBIVsGkyNX#2',
-     'database': 'portal_pms'},
-    {'name': '都城2', 'host': '10.242.118.95', 'user': 'root', 'password': '7%7zLZr9fLE#Y8iyMlSR',
-     'database': 'portal_pms'},
-]
 
-# 用来存储数据库连接的进程ID
+# 全局变量，用于控制任务是否继续执行
+is_running = True
 active_processes = []
+log_lock = threading.Lock()  # 日志锁，确保线程安全
 
-# 捕获退出信号
-def handle_exit_signal(signal, frame):
-    print("\n程序被终止，正在关闭所有数据库连接...")
 
-    # 杀掉所有数据库进程
-    for process_id in active_processes:
-        try:
-            print(f"正在终止数据库进程 {process_id}...")
-            for db_config in db_configs:
-                conn = pymysql.connect(host=db_config['host'], user=db_config['user'], password=db_config['password'],
-                                       database=db_config['database'], autocommit=True)
-                cursor = conn.cursor()
-                cursor.execute(f"KILL {process_id}")  # 使用 KILL 命令杀死进程
-                cursor.close()
-                conn.close()
-            print(f"成功终止进程 {process_id}")
-        except Exception as e:
-            print(f"终止进程 {process_id} 失败: {e}")
-    sys.exit(0)
+# 从配置文件读取数据库配置
+def load_db_configs(config_file):
+    try:
+        with open(config_file, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception as e:
+        print(f"读取配置文件失败: {e}")
+        return []
+
 
 # 处理每个线程的数据
-def process_data_in_db(db_config, task_queue, thread_id):
-    conn = pymysql.connect(host=db_config['host'], user=db_config['user'], password=db_config['password'],
-                           database=db_config['database'], autocommit=True)
-    cursor = conn.cursor()
-    process_id = conn.thread_id()
-    try:
-        if process_id:
-            active_processes.append(process_id)  # 保存当前进程ID
-            print(f"线程 {thread_id} 在数据库 {db_config['name']} 上执行，数据库进程ID: {process_id}")
+class WorkerThread(QThread):
+    log_signal = pyqtSignal(str)  # 用于发送日志信号
 
-        while not task_queue.empty():  # 从队列中获取任务
-            hotel_id = task_queue.get()  # 获取一个酒店ID
+    def __init__(self, db_config, task_queue, thread_id, proc_name, first_param):
+        super().__init__()
+        self.db_config = db_config
+        self.task_queue = task_queue
+        self.thread_id = thread_id
+        self.proc_name = proc_name
+        self.first_param = first_param
+
+    def run(self):
+        conn = pymysql.connect(host=self.db_config['host'], user=self.db_config['user'],
+                               password=self.db_config['password'], database=self.db_config['database'], autocommit=True)
+        cursor = conn.cursor()
+        process_id = conn.thread_id()
+        try:
+            if process_id:
+                with log_lock:
+                    active_processes.append(process_id)  # 保存当前进程ID
+                    self.log_signal.emit(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] 线程 {self.thread_id} 在数据库 {self.db_config['name']} 上执行，数据库进程ID: {process_id}\n")
+
+            while not self.task_queue.empty() and is_running:  # 从队列中获取任务
+                hotel_id = self.task_queue.get()  # 获取一个酒店ID
+                try:
+                    with log_lock:
+                        self.log_signal.emit(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] 线程 {self.thread_id} 在数据库 {self.db_config['name']} 正在执行酒店 ID {hotel_id}\n")
+                    # 调用存储过程
+                    cursor.callproc(self.proc_name, (self.first_param, hotel_id))
+                    with log_lock:
+                        self.log_signal.emit(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] 线程 {self.thread_id} 在数据库 {self.db_config['name']} 执行酒店 ID {hotel_id} 已完成\n")
+                except Exception as e:
+                    with log_lock:
+                        self.log_signal.emit(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] 线程 {self.thread_id} 在数据库 {self.db_config['name']} 执行酒店 ID {hotel_id} 失败: {e}\n")
+                finally:
+                    self.task_queue.task_done()  # 标记任务已完成
+        except Exception as e:
+            with log_lock:
+                self.log_signal.emit(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] 线程 {self.thread_id} 在数据库 {self.db_config['name']} 发生错误: {e}\n")
+        finally:
+            cursor.close()
+            conn.close()
+            with log_lock:
+                self.log_signal.emit(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] 线程 {self.thread_id} 在数据库 {self.db_config['name']} 已退出\n")
+
+
+# 主窗口类
+class MainWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("数据库多线程处理")
+        self.setFixedSize(800, 600)  # 固定窗口大小为 800x600，不允许调整
+
+        # 设置全局字体
+        font = QFont("Arial", 12)
+        self.setFont(font)
+
+        # 主布局
+        main_widget = QWidget()
+        self.setCentralWidget(main_widget)
+        layout = QVBoxLayout()
+        main_widget.setLayout(layout)
+
+        # 参数配置和任务控制区域（同一行）
+        control_group = QGroupBox()
+        control_layout = QHBoxLayout()
+        control_group.setLayout(control_layout)
+
+        # 参数配置区域（左边）
+        param_layout = QHBoxLayout()
+
+        # 存储过程名称
+        param_layout.addWidget(QLabel("过程名称:"))
+        self.proc_name_input = QLineEdit()
+        self.proc_name_input.setPlaceholderText("输入存储过程名称")
+        self.proc_name_input.setText("up_ihotel_call_hotelcall")  # 默认值
+        self.proc_name_input.setFixedWidth(150)
+        param_layout.addWidget(self.proc_name_input)
+
+        # 线程数量
+        param_layout.addWidget(QLabel("进程数量:"))
+        self.num_threads_input = QLineEdit()
+        self.num_threads_input.setPlaceholderText("进程数量")
+        self.num_threads_input.setText("8")  # 默认值
+        self.num_threads_input.setFixedWidth(80)
+        param_layout.addWidget(self.num_threads_input)
+
+        # 首位参数
+        param_layout.addWidget(QLabel("集团ID:"))
+        self.first_param_input = QLineEdit()
+        self.first_param_input.setPlaceholderText("集团ID")
+        self.first_param_input.setText("2")  # 默认值
+        self.first_param_input.setFixedWidth(80)
+        param_layout.addWidget(self.first_param_input)
+
+        control_layout.addLayout(param_layout)
+
+        # 任务控制区域（右边）
+        exec_layout = QHBoxLayout()
+
+        self.start_button = QPushButton("开搞")
+        self.start_button.setFixedSize(100, 30)
+        self.start_button.clicked.connect(self.start_tasks)
+        exec_layout.addWidget(self.start_button)
+
+        self.stop_button = QPushButton("不搞了")
+        self.stop_button.setFixedSize(100, 30)
+        self.stop_button.clicked.connect(self.stop_tasks)
+        self.stop_button.setEnabled(False)  # 初始状态下停止按钮不可点击
+        exec_layout.addWidget(self.stop_button)
+
+        control_layout.addLayout(exec_layout)
+
+        layout.addWidget(control_group)
+
+        # 日志显示区
+        log_group = QGroupBox("日志")
+        log_layout = QVBoxLayout()
+        log_group.setLayout(log_layout)
+
+        self.log_output = QTextEdit()
+        self.log_output.setReadOnly(True)
+        log_layout.addWidget(self.log_output)
+
+        layout.addWidget(log_group)
+
+        # 加载数据库配置
+        self.db_configs = load_db_configs("db_config.json")
+        if not self.db_configs:
+            self.log_output.append("未加载到数据库配置，请检查配置文件！\n")
+
+    # 启动任务
+    def start_tasks(self):
+        global is_running
+        is_running = True
+        self.log_output.clear()
+        self.start_button.setEnabled(False)  # 禁用启动按钮
+        self.stop_button.setEnabled(True)  # 启用停止按钮
+
+        proc_name = self.proc_name_input.text()
+        num_threads = int(self.num_threads_input.text())
+        first_param = int(self.first_param_input.text())
+
+        self.log_output.append(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] 任务启动...\n")
+
+        # 启动线程池来处理多个数据库
+        self.threads = []
+        for db_config in self.db_configs:
+            conn = pymysql.connect(host=db_config['host'], user=db_config['user'],
+                                   password=db_config['password'], database=db_config['database'])
+            cursor = conn.cursor()
             try:
-                print(f"线程 {thread_id} 在数据库 {db_config['name']} 正在执行酒店 ID {hotel_id}")
-                # 调用存储过程：
-                cursor.callproc('up_ihotel_call_hotelcall', (2, hotel_id))
-                print(f"线程 {thread_id} 在数据库 {db_config['name']} 执行酒店 ID {hotel_id} 已完成")
+                cursor.execute("SELECT id FROM hotel WHERE sta = 'I' ORDER BY id")
+                hotel_ids = [row[0] for row in cursor.fetchall()]  # 获取所有ID
+                self.log_output.append(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] 数据库 {db_config['name']} 共执行酒店 {len(hotel_ids)} 条任务\n")
+
+                # 创建任务队列并将ID加入队列
+                task_queue = queue.Queue()
+                for hotel_id in hotel_ids:
+                    task_queue.put(hotel_id)
+
+                # 启动线程池来处理任务
+                for i in range(num_threads):
+                    thread = WorkerThread(db_config, task_queue, i + 1, proc_name, first_param)
+                    thread.log_signal.connect(self.log_output.append)
+                    thread.finished.connect(self.check_tasks_complete)
+                    self.threads.append(thread)
+                    thread.start()
+
             except Exception as e:
-                print(f"Error processing hotel_id {hotel_id} in thread {thread_id} of DB {db_config['name']}: {e}")
+                self.log_output.append(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] 数据库 {db_config['name']} 查询失败: {e}\n")
             finally:
-                task_queue.task_done()  # 标记任务已完成
-    except Exception as e:
-        print(f"Error in thread {thread_id} of DB {db_config['name']}: {e}")
-    finally:
-        cursor.close()
-        conn.close()
+                cursor.close()
+                conn.close()
 
-# 启动多线程，在多个数据库上执行
-def run_threads_on_multiple_databases(db_configs):
-    # 启动线程池来处理多个数据库
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        futures = []
-        # 遍历所有数据库配置
-        for db_config in db_configs:
-            # 为每个数据库启动一个线程池来处理该数据库的任务
-            futures.append(executor.submit(run_db_tasks, db_config))
-        # 等待所有数据库处理完毕
-        for future in futures:
-            future.result()
+    # 检查任务是否全部完成
+    def check_tasks_complete(self):
+        if all(not thread.isRunning() for thread in self.threads):
+            self.log_output.append(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] 所有任务已完成！\n")
+            self.start_button.setEnabled(True)  # 启用启动按钮
+            self.stop_button.setEnabled(False)  # 禁用停止按钮
 
-# 为每个数据库配置启动任务
-def run_db_tasks(db_config):
-    conn = pymysql.connect(host=db_config['host'], user=db_config['user'], password=db_config['password'],
-                           database=db_config['database'])
-    cursor = conn.cursor()
-    try:
-        cursor.execute("SELECT id FROM hotel WHERE sta = 'I' ORDER BY id")
-        hotel_ids = [row[0] for row in cursor.fetchall()]  # 获取所有ID
-        print(f"数据库 {db_config['name']} 共执行酒店 {len(hotel_ids)} 条任务")
-        # 创建任务队列并将ID加入队列
-        task_queue = queue.Queue()
-        for hotel_id in hotel_ids:
-            task_queue.put(hotel_id)
-        # 启动线程池来处理任务
-        num_threads = 8  # 每个数据库上启动的线程数
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            futures = []
-            for i in range(num_threads):
-                futures.append(executor.submit(process_data_in_db, db_config, task_queue, i + 1))
-            # 等待所有线程完成
-            for future in futures:
-                future.result()
-    except Exception as e:
-        print(f"Error fetching data from DB {db_config['name']}: {e}")
-    finally:
-        cursor.close()
-        conn.close()
+    # 停止任务
+    def stop_tasks(self):
+        global is_running
+        is_running = False
+        self.log_output.append(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] 任务已停止，正在终止数据库进程...\n")
 
-# 设置退出信号处理
-signal.signal(signal.SIGINT, handle_exit_signal)  # 捕获Ctrl+C
+        # 终止所有数据库进程
+        for process_id in active_processes:
+            try:
+                for db_config in self.db_configs:
+                    conn = pymysql.connect(host=db_config['host'], user=db_config['user'],
+                                           password=db_config['password'], database=db_config['database'])
+                    cursor = conn.cursor()
+                    cursor.execute(f"KILL {process_id}")  # 终止进程
+                    cursor.close()
+                    conn.close()
+                self.log_output.append(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] 成功终止进程 {process_id}\n")
+            except Exception as e:
+                self.log_output.append(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] 终止进程 {process_id} 失败: {e}\n")
 
-# 运行
+        self.start_button.setEnabled(True)  # 启用启动按钮
+        self.stop_button.setEnabled(False)  # 禁用停止按钮
+
+
+# 运行程序
 if __name__ == "__main__":
-    run_threads_on_multiple_databases(db_configs)
+    app = QApplication(sys.argv)
+    window = MainWindow()
+    window.show()
+    sys.exit(app.exec_())
