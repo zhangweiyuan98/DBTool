@@ -25,6 +25,8 @@ from utils.ProcessDialog import ProcessDialog
 from utils import logger
 from utils.logger import logger
 from utils.parseconfig import parse_config
+from utils.sqledit import SQLTextEdit
+
 
 class Ui_MainWindow(object):
     def __init__(self):
@@ -190,20 +192,9 @@ class Ui_MainWindow(object):
 
         layout.addLayout(self.row2Layout)
         splitter = QSplitter(Qt.Vertical)
-        self.sqlTextEdit = QtWidgets.QTextEdit(parent=self.centralwidget)
-        self.sqlTextEdit.setFont(font)
-        self.sqlTextEdit.setText("select * from hotel limit 1;")
-        self.sqlTextEdit.setStyleSheet("""  
-                    QTextEdit {  
-                        background-color: #434343;  /* 深色背景 */  
-                        color: #d4d4d4;            /* 浅灰色文字 */  
-                        selection-background-color: #3a3a3a; /* 选中时的背景色 */  
-                        selection-color: #ffffff;    /* 选中时的文字色 */  
-                        border: 1px solid #444444;   /* 边框颜色 */  
-                        border-radius: 2px;         /* 边框圆角 */  
-                    }  
-                """)
-        splitter.addWidget(self.sqlTextEdit)
+
+        self.queryInput = SQLTextEdit()
+        splitter.addWidget(self.queryInput)
 
         self.tab_widget = QtWidgets.QTabWidget(self.centralwidget)
         self.tab_widget.tabBar().setTabsClosable(True)
@@ -224,7 +215,6 @@ class Ui_MainWindow(object):
         self.context_menu.addAction(self.action_export_csv)
         self.context_menu.addAction(self.filter)
 
-        splitter.addWidget(self.sqlTextEdit)
         splitter.addWidget(self.tab_widget)
         layout.addWidget(splitter)
 
@@ -241,6 +231,327 @@ class Ui_MainWindow(object):
         self.isRunning = False
         self.elapsed_time = 0  # 记录已经经过的时间（单位为毫秒）
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
+
+        # 设置主窗口样式
+        MainWindow.setStyleSheet("""
+            /* 全局样式 */
+            QWidget {
+                font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+                font-size: 13px;
+                color: #1d1d1f;
+            }
+            
+            /* 主窗口 */
+            QMainWindow {
+                background-color: #f5f5f7;
+            }
+            
+            /* 分组框 */
+            QGroupBox {
+                border: 1px solid #d2d2d7;
+                border-radius: 6px;
+                margin-top: 10px;
+                padding-top: 15px;
+                font-size: 13px;
+                font-weight: 500;
+                color: #1d1d1f;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 10px;
+                padding: 0 3px;
+            }
+            
+            /* 按钮 */
+            QPushButton {
+                border: 1px solid #d2d2d7;
+                border-radius: 6px;
+                padding: 6px 12px;
+                min-width: 80px;
+            }
+            QPushButton:hover:enabled {
+                background-color: #e5e5e7;
+                border-color: #a2a2a7;
+            }
+            QPushButton:pressed:enabled {
+                background-color: #d5d5d7;
+            }
+            QPushButton:disabled {
+                background-color: #f5f5f7;
+                color: #a2a2a7;
+                border-color: #d2d2d7;
+            }
+            
+            /* 主要操作按钮 */
+            #executeButton, #executeButton2, #executeButton3 {
+                background-color: #007aff;
+                color: white;
+                border: none;
+            }
+            #executeButton:hover:enabled, 
+            #executeButton2:hover:enabled, 
+            #executeButton3:hover:enabled {
+                background-color: #0063cc;
+            }
+            #executeButton:pressed:enabled, 
+            #executeButton2:pressed:enabled, 
+            #executeButton3:pressed:enabled {
+                background-color: #004999;
+            }
+            #executeButton:disabled, 
+            #executeButton2:disabled, 
+            #executeButton3:disabled {
+                background-color: #f5f5f7;
+                color: #a2a2a7;
+                border: 1px solid #d2d2d7;
+            }
+            
+            /* 输入框 */
+            QLineEdit, QComboBox {
+                border: 1px solid #d2d2d7;
+                border-radius: 6px;
+                padding: 6px;
+                background-color: white;
+                selection-background-color: #007aff;
+                selection-color: white;
+            }
+            QLineEdit:hover, QComboBox:hover {
+                border-color: #a2a2a7;
+            }
+            QLineEdit:focus, QComboBox:focus {
+                border-color: #007aff;
+            }
+            
+            /* 下拉框 */
+            QComboBox {
+                padding-right: 20px; /* 为箭头留出空间 */
+            }
+            QComboBox::drop-down {
+                subcontrol-origin: padding;
+                subcontrol-position: top right;
+                width: 20px;
+                border-left: 1px solid #d2d2d7;
+                border-radius: 0 6px 6px 0;
+            }
+            QComboBox::down-arrow {
+                image: url(resources/down-arrow.png);
+                width: 12px;
+                height: 12px;
+            }
+            QComboBox QAbstractItemView {
+                border: 1px solid #d2d2d7;
+                border-radius: 6px;
+                padding: 4px;
+                background-color: white;
+                selection-background-color: #007aff;
+                selection-color: white;
+                min-width: 200px; /* 设置最小宽度 */
+            }
+            QComboBox QAbstractItemView::item {
+                padding: 4px 8px;
+            }
+            
+            /* 复选框 */
+            QCheckBox {
+                spacing: 6px;
+            }
+            QCheckBox::indicator {
+                width: 16px;
+                height: 16px;
+                border: 1px solid #d2d2d7;
+                border-radius: 4px;
+            }
+            QCheckBox::indicator:checked {
+                background-color: #007aff;
+                border-color: #007aff;
+            }
+            
+            /* 标签页 */
+            QTabWidget::pane {
+                border: 1px solid #d2d2d7;
+                border-radius: 6px;
+                margin-top: -1px;
+                padding: 4px;
+            }
+            
+            QTabBar::tab {
+                background: #f5f5f7;
+                border: 1px solid #d2d2d7;
+                border-bottom: none;
+                padding: 8px 32px 8px 16px; /* 增加右侧padding给关闭按钮留空间 */
+                min-width: 100px;
+                border-top-left-radius: 6px;
+                border-top-right-radius: 6px;
+                margin-right: 4px;
+                position: relative;
+            }
+            
+            QTabBar::tab:selected {
+                background: white;
+                border-bottom-color: white;
+            }
+            
+            QTabBar::close-button {
+                subcontrol-position: right;
+                subcontrol-origin: margin;
+                width: 16px;
+                height: 16px;
+                margin: 4px 4px 4px 8px;
+                border-radius: 8px;
+                background-color: transparent;
+            }
+            
+            QTabBar::close-button:hover {
+                background-color: #ff3b30;
+            }
+            
+            QTabBar::close-button::icon {
+                width: 12px;
+                height: 12px;
+                background-color: transparent;
+                border: 1px solid #a2a2a7;
+                border-radius: 6px;
+                position: relative;
+            }
+            
+            QTabBar::close-button::icon::before,
+            QTabBar::close-button::icon::after {
+                content: "";
+                position: absolute;
+                width: 8px;
+                height: 1px;
+                background-color: #a2a2a7;
+                top: 50%;
+                left: 50%;
+            }
+            
+            QTabBar::close-button::icon::before {
+                transform: translate(-50%, -50%) rotate(45deg);
+            }
+            
+            QTabBar::close-button::icon::after {
+                transform: translate(-50%, -50%) rotate(-45deg);
+            }
+            
+            QTabBar::close-button:hover::icon::before,
+            QTabBar::close-button:hover::icon::after {
+                background-color: white;
+            }
+            
+            /* 表格样式 */
+            QTableView {
+                background-color: white;
+                alternate-background-color: #f5f5f7;
+                gridline-color: #d2d2d7;
+                selection-background-color: #007aff;
+                selection-color: white;
+            }
+            
+            QHeaderView::section {
+                background-color: #f5f5f7;
+                padding: 8px;
+                border: 1px solid #d2d2d7;
+            }
+        """)
+
+        # 给按钮设置对象名称
+        self.executeButton.setObjectName("executeButton")
+        self.executeButton2.setObjectName("executeButton2")
+        self.executeButton3.setObjectName("executeButton3")
+
+        # 设置下拉框的最小宽度
+        self.serverComboBox.setMinimumWidth(200)
+        self.sheet_dropdown.setMinimumWidth(200)
+
+        # 调整布局间距
+        layout.setSpacing(15)
+        layout.setContentsMargins(15, 15, 15, 15)
+        
+        # 调整按钮样式
+        self.executeButton.setStyleSheet("""
+            QPushButton {
+                background-color: #2196F3;
+            }
+            QPushButton:hover {
+                background-color: #1e88e5;
+            }
+        """)
+        
+        self.executeButton2.setStyleSheet("""
+            QPushButton {
+                background-color: #2196F3;
+                font-size: 14px;
+                padding: 10px 20px;
+            }
+            QPushButton:hover {
+                background-color: #fb8c00;
+            }
+        """)
+        
+        self.executeButton3.setStyleSheet("""
+            QPushButton {
+                background-color: #2196F3;
+                font-size: 14px;
+                padding: 10px 20px;
+            }
+            QPushButton:hover {
+                background-color: #e53935;
+            }
+        """)
+
+        # 调整表格样式
+        self.tab_widget.setStyleSheet("""
+            QTableView {
+                background-color: white;
+                alternate-background-color: #f9f9f9;
+                gridline-color: #ddd;
+                selection-background-color: #e3f2fd;
+                selection-color: #000;
+            }
+            QHeaderView::section {
+                background-color: #f5f5f5;
+                padding: 8px;
+                border: 1px solid #ddd;
+            }
+        """)
+        
+        # 调整菜单栏样式
+        menubar.setStyleSheet("""
+            QMenuBar {
+                background-color: #f5f5f5;
+                padding: 4px;
+                border-bottom: 1px solid #ddd;
+            }
+            QMenuBar::item {
+                padding: 4px 8px;
+            }
+            QMenuBar::item:selected {
+                background-color: #e0e0e0;
+            }
+        """)
+
+        # 调整复选框样式
+        checkbox_style = """
+            QCheckBox {
+                spacing: 5px;
+            }
+            QCheckBox::indicator {
+                width: 16px;
+                height: 16px;
+            }
+        """
+        self.checkbox.setStyleSheet(checkbox_style)
+        self.execute_PMS.setStyleSheet(checkbox_style)
+        self.execute_group.setStyleSheet(checkbox_style)
+        self.execute_member.setStyleSheet(checkbox_style)
+
+        # 设置标签页关闭按钮可见
+        self.tab_widget.setTabsClosable(True)
+        self.tab_widget.tabBar().setStyleSheet("""
+            QTabBar::tab {
+                padding-right: 32px; /* 为关闭按钮留出空间 */
+            }
+        """)
 
     def open_server_dialog(self):
         dialog = ServerDialog()
@@ -314,7 +625,7 @@ class Ui_MainWindow(object):
 
     def execute_button_clicked(self):
         server_name = self.serverComboBox.currentText().strip()
-        sql = self.sqlTextEdit.toPlainText().strip()
+        sql = self.queryInput.toPlainText().strip()
         timeLabel = self.timeLabel
         execute_group = self.execute_group
         execute_pms = self.execute_PMS
