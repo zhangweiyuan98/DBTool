@@ -25,7 +25,7 @@ from utils.ProcessDialog import ProcessDialog
 from utils import logger
 from utils.logger import logger
 from utils.parseconfig import parse_config
-from utils.sqledit import SQLTextEdit
+from utils.SqlEdit import SQLTextEdit
 
 
 class Ui_MainWindow(object):
