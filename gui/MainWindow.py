@@ -281,31 +281,7 @@ class Ui_MainWindow(object):
                 color: #a2a2a7;
                 border-color: #d2d2d7;
             }
-            
-            /* 主要操作按钮 */
-            #executeButton, #executeButton2, #executeButton3 {
-                background-color: #007aff;
-                color: white;
-                border: none;
-            }
-            #executeButton:hover:enabled, 
-            #executeButton2:hover:enabled, 
-            #executeButton3:hover:enabled {
-                background-color: #0063cc;
-            }
-            #executeButton:pressed:enabled, 
-            #executeButton2:pressed:enabled, 
-            #executeButton3:pressed:enabled {
-                background-color: #004999;
-            }
-            #executeButton:disabled, 
-            #executeButton2:disabled, 
-            #executeButton3:disabled {
-                background-color: #f5f5f7;
-                color: #a2a2a7;
-                border: 1px solid #d2d2d7;
-            }
-            
+
             /* 输入框 */
             QLineEdit, QComboBox {
                 border: 1px solid #d2d2d7;
@@ -351,93 +327,6 @@ class Ui_MainWindow(object):
                 padding: 4px 8px;
             }
             
-            /* 复选框 */
-            QCheckBox {
-                spacing: 6px;
-            }
-            QCheckBox::indicator {
-                width: 16px;
-                height: 16px;
-                border: 1px solid #d2d2d7;
-                border-radius: 4px;
-            }
-            QCheckBox::indicator:checked {
-                background-color: #007aff;
-                border-color: #007aff;
-            }
-            
-            /* 标签页 */
-            QTabWidget::pane {
-                border: 1px solid #d2d2d7;
-                border-radius: 6px;
-                margin-top: -1px;
-                padding: 4px;
-            }
-            
-            QTabBar::tab {
-                background: #f5f5f7;
-                border: 1px solid #d2d2d7;
-                border-bottom: none;
-                padding: 8px 32px 8px 16px; /* 增加右侧padding给关闭按钮留空间 */
-                min-width: 100px;
-                border-top-left-radius: 6px;
-                border-top-right-radius: 6px;
-                margin-right: 4px;
-                position: relative;
-            }
-            
-            QTabBar::tab:selected {
-                background: white;
-                border-bottom-color: white;
-            }
-            
-            QTabBar::close-button {
-                subcontrol-position: right;
-                subcontrol-origin: margin;
-                width: 16px;
-                height: 16px;
-                margin: 4px 4px 4px 8px;
-                border-radius: 8px;
-                background-color: transparent;
-            }
-            
-            QTabBar::close-button:hover {
-                background-color: #ff3b30;
-            }
-            
-            QTabBar::close-button::icon {
-                width: 12px;
-                height: 12px;
-                background-color: transparent;
-                border: 1px solid #a2a2a7;
-                border-radius: 6px;
-                position: relative;
-            }
-            
-            QTabBar::close-button::icon::before,
-            QTabBar::close-button::icon::after {
-                content: "";
-                position: absolute;
-                width: 8px;
-                height: 1px;
-                background-color: #a2a2a7;
-                top: 50%;
-                left: 50%;
-            }
-            
-            QTabBar::close-button::icon::before {
-                transform: translate(-50%, -50%) rotate(45deg);
-            }
-            
-            QTabBar::close-button::icon::after {
-                transform: translate(-50%, -50%) rotate(-45deg);
-            }
-            
-            QTabBar::close-button:hover::icon::before,
-            QTabBar::close-button:hover::icon::after {
-                background-color: white;
-            }
-            
             /* 表格样式 */
             QTableView {
                 background-color: white;
@@ -460,44 +349,12 @@ class Ui_MainWindow(object):
         self.executeButton3.setObjectName("executeButton3")
 
         # 设置下拉框的最小宽度
-        self.serverComboBox.setMinimumWidth(200)
-        self.sheet_dropdown.setMinimumWidth(200)
+        self.serverComboBox.setMinimumWidth(100)
+        self.sheet_dropdown.setMinimumWidth(100)
 
         # 调整布局间距
-        layout.setSpacing(15)
-        layout.setContentsMargins(15, 15, 15, 15)
-        
-        # 调整按钮样式
-        self.executeButton.setStyleSheet("""
-            QPushButton {
-                background-color: #2196F3;
-            }
-            QPushButton:hover {
-                background-color: #1e88e5;
-            }
-        """)
-        
-        self.executeButton2.setStyleSheet("""
-            QPushButton {
-                background-color: #2196F3;
-                font-size: 14px;
-                padding: 10px 20px;
-            }
-            QPushButton:hover {
-                background-color: #fb8c00;
-            }
-        """)
-        
-        self.executeButton3.setStyleSheet("""
-            QPushButton {
-                background-color: #2196F3;
-                font-size: 14px;
-                padding: 10px 20px;
-            }
-            QPushButton:hover {
-                background-color: #e53935;
-            }
-        """)
+        layout.setSpacing(10)
+        layout.setContentsMargins(10, 10, 10, 10)
 
         # 调整表格样式
         self.tab_widget.setStyleSheet("""

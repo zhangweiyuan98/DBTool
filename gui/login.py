@@ -85,23 +85,56 @@ class LoginWindow(QtWidgets.QWidget):
 
         layout.addStretch(1)  # 让布局保持一定的对齐
 
-        # 按钮点击事件
+        # 登录次数限制
+        self.max_attempts = 3  # 最大尝试次数
+        self.attempts = 0      # 当前尝试次数
+        
+        # 登录按钮点击事件
         self.login_button.clicked.connect(self.handle_login)
-
+        
         # 支持通过回车键登录
         self.username_input.returnPressed.connect(self.handle_login)
         self.password_input.returnPressed.connect(self.handle_login)
 
     def handle_login(self):
+        """处理登录逻辑"""
+        # 检查尝试次数
+        if self.attempts >= self.max_attempts:
+            QtWidgets.QMessageBox.critical(
+                self,
+                '登录失败',
+                '登录次数过多，请稍后再试'
+            )
+            return
+        
         username = self.username_input.text()
         password = self.password_input.text()
 
-        if username == 'admin' and password == 'password':
+        if username == 'admin' and password == '1':
             self.accept_login()
         else:
-            QtWidgets.QMessageBox.warning(self, '登录失败', '用户名或密码错误')
+            self.attempts += 1
+            remaining_attempts = self.max_attempts - self.attempts
+            if remaining_attempts > 0:
+                QtWidgets.QMessageBox.warning(
+                    self,
+                    '登录失败',
+                    f'用户名或密码错误，剩余尝试次数：{remaining_attempts}'
+                )
+            else:
+                QtWidgets.QMessageBox.critical(
+                    self,
+                    '登录失败',
+                    '登录次数已用完，请稍后再试'
+                )
+                self.login_button.setEnabled(False)  # 禁用登录按钮
+                self.username_input.setEnabled(False)  # 禁用用户名输入
+                self.password_input.setEnabled(False)  # 禁用密码输入
 
     def accept_login(self):
+        """登录成功处理"""
+        # 重置尝试次数
+        self.attempts = 0
         # 登录成功，关闭当前窗口，打开主窗口
         self.close()
         self.main_window = MainWindow()
