@@ -2,11 +2,8 @@
 
 ## 概述
 DBTool 是一个基于 PyQt5 的数据库管理工具，主要用于：
-- 执行 SQL 查询
-- 导入 Excel 数据到数据库
-- 批量执行 SQL 脚本
-- 数据库进程管理
-- 数据导出（支持 Excel 和 CSV 格式）
+- 同时到不同服务器中执行SQL语句
+- 通过配置文件定义数据库链接
 
 ## 主要功能
 
@@ -54,14 +51,14 @@ DBTool 是一个基于 PyQt5 的数据库管理工具，主要用于：
 
 ## 安装说明
 
-1. 安装 Python 3.8 或以上版本
+1. 安装 Python 3.7.9 或以上版本
 2. 安装依赖：
    ```bash
    pip install -r requirements.txt
    ```
 3. 运行程序：
    ```bash
-   python MainWindow.py
+   python main.py
    ```
 
 ## 使用说明
