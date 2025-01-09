@@ -1,6 +1,6 @@
 import configparser
 
-from uitls.logger import logger
+from utils.logger import logger
 
 
 def parse_config(server_name):

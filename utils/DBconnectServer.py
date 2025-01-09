@@ -3,9 +3,9 @@ import pymysql
 from sshtunnel import SSHTunnelForwarder
 
 
-from uitls.DBcrypt import decode_password
+from utils.DBcrypt import decode_password
 from gui.PopupManager import  PopupManager
-from uitls.logger import logger
+from utils.logger import logger
 
 popup_manager = PopupManager()
 

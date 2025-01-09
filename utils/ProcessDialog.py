@@ -5,9 +5,9 @@ import threading
 from PyQt5.QtCore import QTimer
 from PyQt5.QtWidgets import QMessageBox, QTableWidgetItem, QPushButton, QTableWidget, QVBoxLayout, QLabel, QDialog
 
-from uitls.logger import logger
-from uitls.DBconnectServer import connect_to_server
-from uitls.parseconfig import parse_config
+from utils.logger import logger
+from utils.DBconnectServer import connect_to_server
+from utils.parseconfig import parse_config
 
 
 class ProcessDialog(QDialog):

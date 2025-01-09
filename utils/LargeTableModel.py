@@ -6,8 +6,8 @@ from concurrent.futures import ThreadPoolExecutor
 
 import openpyxl
 from PyQt5 import QtCore
-from uitls.logger import logger
-from uitls.DBconnectServer import popup_manager
+from utils.logger import logger
+from utils.DBconnectServer import popup_manager
 
 
 class ExportThread(threading.Thread):

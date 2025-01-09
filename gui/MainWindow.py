@@ -15,16 +15,16 @@ from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QFileDialog, QMenu, QAction, QLabel, QSplitter, QPushButton, \
     QComboBox, QAbstractItemView, QDialog, QMessageBox
 
-from uitls.AddConnet import ServerDialog
-from uitls.DBconnectServer import popup_manager, connect_to_server
-from uitls.DBcrypt import encode_password
-from uitls.ExThread import Thread_1, Thread_2
-from uitls.Exdatabases import split_statements, clean_sql, execute_sql, Process_df
-from uitls.LargeTableModel import LargeTableModel, ExportThreadCsv, ExportThread
-from uitls.ProcessDialog import ProcessDialog
-from uitls import logger
-from uitls.logger import logger
-from uitls.parseconfig import parse_config
+from utils.AddConnet import ServerDialog
+from utils.DBconnectServer import popup_manager, connect_to_server
+from utils.DBcrypt import encode_password
+from utils.ExThread import Thread_1, Thread_2
+from utils.Exdatabases import split_statements, clean_sql, execute_sql, Process_df
+from utils.LargeTableModel import LargeTableModel, ExportThreadCsv, ExportThread
+from utils.ProcessDialog import ProcessDialog
+from utils import logger
+from utils.logger import logger
+from utils.parseconfig import parse_config
 
 class Ui_MainWindow(object):
     def __init__(self):

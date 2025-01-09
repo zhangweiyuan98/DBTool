@@ -6,8 +6,8 @@ import pymysql
 import sqlparse
 
 
-from uitls.DBconnectServer import popup_manager
-from uitls.logger import logger
+from utils.DBconnectServer import popup_manager
+from utils.logger import logger
 
 global Process_df
 Process_df = pd.DataFrame(columns=['Process_id', 'Status', '服务器组'])
