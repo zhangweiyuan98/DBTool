@@ -45,36 +45,67 @@ class SQLHighlighter(QtGui.QSyntaxHighlighter):
 
         # 关键字格式
         keyword_format = QtGui.QTextCharFormat()
-        keyword_format.setForeground(QtGui.QColor('#007AFF'))  # 蓝色
+        keyword_format.setForeground(QtGui.QColor('#0A84FF'))  # 蓝色
         keyword_format.setFontWeight(QtGui.QFont.Bold)
-        
+
         for word in keywords:
             pattern = r'\b' + word + r'\b'
             self.highlight_rules.append((QtCore.QRegularExpression(pattern), keyword_format))
-        
+
         # 字符串格式
         string_format = QtGui.QTextCharFormat()
-        string_format.setForeground(QtGui.QColor('#34C759'))  # 绿色
+        string_format.setForeground(QtGui.QColor('#FF3B30'))  # 红色
         self.highlight_rules.append((QtCore.QRegularExpression(r"'.*?'"), string_format))
         self.highlight_rules.append((QtCore.QRegularExpression(r'".*?"'), string_format))
-        
+
         # 数字格式
         number_format = QtGui.QTextCharFormat()
-        number_format.setForeground(QtGui.QColor('#FF9500'))  # 橙色
+        number_format.setForeground(QtGui.QColor('#FF9F0A'))  # 橙色
         self.highlight_rules.append((QtCore.QRegularExpression(r'\b\d+\b'), number_format))
-        
+
         # 注释格式
-        comment_format = QtGui.QTextCharFormat()
-        comment_format.setForeground(QtGui.QColor('#8E8E93'))  # 灰色
-        self.highlight_rules.append((QtCore.QRegularExpression(r'--[^\n]*'), comment_format))
-        self.highlight_rules.append((QtCore.QRegularExpression(r'/\*.*?\*/', QtCore.QRegularExpression.DotMatchesEverythingOption), comment_format))
+        self.comment_format = QtGui.QTextCharFormat()
+        self.comment_format.setForeground(QtGui.QColor('#30D158'))  # 绿色
+        self.highlight_rules.append((QtCore.QRegularExpression(r'--[^\n]*'), self.comment_format))
+        self.highlight_rules.append((QtCore.QRegularExpression(r'#[^\n]*'), self.comment_format))
+
+        # 多行注释正则表达式
+        self.comment_start = QtCore.QRegularExpression(r'/\*')
+        self.comment_end = QtCore.QRegularExpression(r'\*/')
 
     def highlightBlock(self, text):
+        # 处理单行规则
         for pattern, format in self.highlight_rules:
             match_iterator = pattern.globalMatch(text)
             while match_iterator.hasNext():
                 match = match_iterator.next()
                 self.setFormat(match.capturedStart(), match.capturedLength(), format)
+
+        # 处理多行注释
+        self.setCurrentBlockState(0)  # 默认状态
+        start_index = 0
+        if self.previousBlockState() != 1:
+            # 如果上一行不是注释状态，查找注释开始
+            start_match = self.comment_start.match(text)
+            start_index = start_match.capturedStart()
+
+        while start_index >= 0:
+            # 查找注释结束
+            end_match = self.comment_end.match(text, start_index)
+            if not end_match.hasMatch():
+                # 如果没有找到注释结束，说明注释跨越多行
+                self.setCurrentBlockState(1)  # 设置为注释状态
+                comment_length = len(text) - start_index
+            else:
+                # 找到注释结束
+                comment_length = end_match.capturedEnd() - start_index
+
+            # 应用注释格式
+            self.setFormat(start_index, comment_length, self.comment_format)
+
+            # 查找下一个注释开始
+            start_match = self.comment_start.match(text, start_index + comment_length)
+            start_index = start_match.capturedStart()
 
 
 class SQLTextEdit(QtWidgets.QTextEdit):
@@ -84,10 +115,10 @@ class SQLTextEdit(QtWidgets.QTextEdit):
         self.setStyleSheet("""
             QTextEdit {
                 font-family: Consolas, "Courier New", monospace;
-                font-size: 13px;
-                color: #1d1d1f;
-                background-color: #ffffff;
-                border: 1px solid #d2d2d7;
+                font-size: 14px;  /* 字体放大一号 */
+                color: #ffffff;  /* 白色字体 */
+                background-color: #1d1d1f;  /* 苹果黑主题背景色 */
+                border: 1px solid #3a3a3c;  /* 深灰色边框 */
                 border-radius: 6px;
                 padding: 8px;
             }

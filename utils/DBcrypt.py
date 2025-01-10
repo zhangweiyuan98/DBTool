@@ -1,6 +1,5 @@
 import base64
 
-
 def encode_password(password):
     """加密"""
     password_bytes = password.encode('utf-8')

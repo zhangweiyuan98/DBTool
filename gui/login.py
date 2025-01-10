@@ -10,7 +10,7 @@ class LoginWindow(QtWidgets.QWidget):
         self.setWindowTitle('登录界面')
 
         # 设置窗口大小和初始位置
-        self.setGeometry(500, 300, 400, 300)
+        self.setGeometry(500, 500, 600, 200)
         self.setStyleSheet("background-color: #f5f5f5;")  # 设置背景色
 
         # 使用 QVBoxLayout 来更好的控制布局
@@ -19,14 +19,14 @@ class LoginWindow(QtWidgets.QWidget):
         # 创建一个标题标签
         self.title_label = QtWidgets.QLabel('欢迎登录', self)
         self.title_label.setAlignment(QtCore.Qt.AlignCenter)
-        self.title_label.setFont(QtGui.QFont('Arial', 20, QtGui.QFont.Bold))
+        self.title_label.setFont(QtGui.QFont('Segoe UI', 20, QtGui.QFont.Bold))
         layout.addWidget(self.title_label)
 
         layout.addSpacing(30)  # 加一些间距，使布局更舒服
 
         # 用户名
         self.label_username = QtWidgets.QLabel('用户名:', self)
-        self.label_username.setFont(QtGui.QFont('Arial', 12))
+        self.label_username.setFont(QtGui.QFont('Segoe UI', 12))
         layout.addWidget(self.label_username)
 
         self.username_input = QtWidgets.QLineEdit(self)
@@ -46,7 +46,7 @@ class LoginWindow(QtWidgets.QWidget):
 
         # 密码
         self.label_password = QtWidgets.QLabel('密码:', self)
-        self.label_password.setFont(QtGui.QFont('Arial', 12))
+        self.label_password.setFont(QtGui.QFont('Segoe UI', 12))
         layout.addWidget(self.label_password)
 
         self.password_input = QtWidgets.QLineEdit(self)

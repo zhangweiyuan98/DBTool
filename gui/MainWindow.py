@@ -40,7 +40,7 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.setWindowTitle("DBtool")
-        MainWindow.setWindowIcon(QIcon("resources/icon.ico"))
+        MainWindow.setWindowIcon(QIcon("resources\icon.ico"))
         MainWindow.setEnabled(True)
         MainWindow.resize(1024, 768)
 
