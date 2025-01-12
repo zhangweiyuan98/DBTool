@@ -1,4 +1,3 @@
-import datetime
 import queue
 import re
 import threading
@@ -35,21 +34,27 @@ class Thread_1(QThread):
             sql = self.sql
             result_dict = {}
             config = parse_config(server_name)
-            start_time = datetime.datetime.now()  # 记录开始时间
+
 
             def execute_query(server, section, sql, type, name, db_name):
                 connection = connect_to_server(server)
-                if connection:
+                if connection is not None:
                     try:
                         logger.info(f"执行SQL语句：{sql}")
                         result = execute_sql(connection, sql, section, type, db_name, name, None)
                         if result is not None:
                             self.result_queue.put((sql, result))
                     except Exception as e:
+
                         logger.error(f"未完成执行的错误：{section}-{e}")
-                        popup_manager.message_signal.emit(f"未完成执行的错误：{section}-{e}")
+                        # popup_manager.message_signal.emit(f"未完成执行的错误：{section}-{e}")
                     finally:
                         connection.close()
+                else:
+                    err_df = pd.DataFrame(columns=['信息', '服务器组'])
+                    row = {'信息': '发生错误，请检查数据库链接设置', '服务器组': section}
+                    err_df = err_df.append(row, ignore_index=True)
+                    self.result_queue.put((sql,err_df))
 
             threads = []
             sql_query, db_name = clean_sql(sql)
@@ -92,27 +97,22 @@ class Thread_1(QThread):
 
             while not self.result_queue.empty():
                 sql_query, result_df = self.result_queue.get()
-                print(result_df)
                 if not result_df.index.is_unique:
-                    print("Warning: Duplicate index in result_df!")
                     result_df = result_df.reset_index(drop=True)
                 if sql_query in result_dict:
                     result_dict[sql_query] = pd.concat([result_dict[sql_query], result_df], ignore_index=True)
                 else:
                     result_dict[sql_query] = result_df.reset_index(drop=True)
 
-            # 计算总耗时并显示
-            elapsed_time = datetime.datetime.now() - start_time
-            formatted_time = elapsed_time.total_seconds()
-            self.timeLabel.setText(f"{round(formatted_time, 4)} Seconds")
             # 在 UI 上显示结果
             for sql_query, result_df in result_dict.items():
-                print(1)
                 self.result_ready.emit(result_df, sql_query)
 
         except Exception as e:
             logger.error(f"执行操作未知错误: {str(e)}")
             popup_manager.message_signal.emit(f"未完成执行的错误:{e}")
+
+
 
 class Thread_2(QThread):
     signal = pyqtSignal()  # 括号里填写信号传递的参数
@@ -130,22 +130,26 @@ class Thread_2(QThread):
     def run(self):
         try:
             server_name = self.server_name
-            result_queue = queue.Queue()  # 创建一个队列来存储每个线程的执行结果
+            result_queue = queue.Queue()
+            result_dict = {}
             config = parse_config(server_name)
-            start_time = datetime.datetime.now()  # 记录开始时间
 
             def execute_query(server, section, result_queue):
                 connection = connect_to_server(server)
-                if connection:
+                if connection is not None:
                     try:
                         result = kill_sql(connection, section, None)
                         if result is not None:
                             result_queue.put(result)  # 将结果放入队列
                     except Exception as e:
                         logger.error(f"未完成执行的错误：=>>  {server}-{e}")
-                        # popup_manager.message_signal.emit(f"未完成执行的错误：=>>  {server}-{e}")
                     finally:
                         connection.close()
+                else:
+                    err_df = pd.DataFrame(columns=['信息', '服务器组'])
+                    row = {'信息': '发生错误，请检查数据库链接设置', '服务器组': section}
+                    err_df = err_df.append(row, ignore_index=True)
+                    self.result_queue.put(('错误',err_df))
 
             threads = []
             for section in config.sections():
@@ -161,18 +165,18 @@ class Thread_2(QThread):
             for thread, server, section in threads:
                 thread.join()
                 logger.info(f"{thread.name} 已执行!")
-            elapsed_time = datetime.datetime.now() - start_time
-            formatted_time = elapsed_time.total_seconds()
-            self.timeLabel.setText(f"{round(formatted_time, 4)} Seconds")
 
-            # 在界面上显示结果
-            result_df = pd.DataFrame()
-            while not result_queue.empty():
-                result = result_queue.get()
-                if result_df.empty:
-                    result_df = result
+            while not self.result_queue.empty():
+                sql_query, result_df = self.result_queue.get()
+                if not result_df.index.is_unique:
+                    result_df = result_df.reset_index(drop=True)
+                if sql_query in result_dict:
+                    result_dict[sql_query] = pd.concat([result_dict[sql_query], result_df], ignore_index=True)
                 else:
-                    result_df = result_df.append(result, ignore_index=True)
-            self.stop_click.emit(result_df)
+                    result_dict[sql_query] = result_df.reset_index(drop=True)
+
+            # 在 UI 上显示结果
+            for sql_query, result_df in result_dict.items():
+                self.stop_click.emit(result_df)
         except Exception as e:
             logger.error(f"停止操作未知错误: {str(e)}")
