@@ -37,7 +37,6 @@ def split_statements(sql_text):
 
 def clean_sql(sql):
     """规则"""
-    print(f"规则：{sql}")
     use_pattern = r"USE\s+`?(\w+)`?\$"
     use_match = re.search(use_pattern, sql, re.IGNORECASE)
     if use_match:
