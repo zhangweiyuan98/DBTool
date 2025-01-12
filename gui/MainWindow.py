@@ -31,6 +31,7 @@ from utils.SqlEdit import SQLTextEdit
 class Ui_MainWindow(object):
     def __init__(self):
         super().__init__()
+        self.statusbar = None
         self.sqlTextEdit = None
         self.selected_rows = None
         self.selected_colums = None
@@ -46,7 +47,8 @@ class Ui_MainWindow(object):
 
         menubar = self.menuBar()
         server_menu = menubar.addMenu("菜单")
-
+        self.statusbar = MainWindow.statusBar()
+        
         add_server_action = QAction("添加服务器", self)
         add_server_action.triggered.connect(self.open_server_dialog)
         server_menu.addAction(add_server_action)
@@ -574,7 +576,7 @@ class Ui_MainWindow(object):
         milliseconds = self.elapsed_time % 1000
         # 格式化时间为 "mm:ss:SSS"
         formatted_time = f"{minutes:02}:{seconds:02}:{milliseconds:03}"
-        MainWindow.setWindowTitle(_translate("MainWindow", f"DB_Tool- 耗时:{formatted_time} - 完成！"))
+        MainWindow.setWindowTitle(_translate("MainWindow", f"DB_Tool- 耗时:{formatted_time}"))
 
     def dorp_table(self,MainWindow):
         """模拟执行完毕的操作"""
@@ -995,7 +997,15 @@ class Ui_MainWindow(object):
 
         last_index = self.tab_widget.count() - 1
         self.tab_widget.setCurrentIndex(last_index)
-
+        self.update_status_bar()
+    def update_status_bar(self):
+        """更新状态栏显示的行数"""
+        current_table = self.tab_widget.currentWidget()
+        if current_table:
+            model = current_table.model()
+            row_count = model.rowCount()
+            self.statusbar.showMessage(f"行数: {row_count}")
+            
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def __init__(self):
         super().__init__()
