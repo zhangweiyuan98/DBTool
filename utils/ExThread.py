@@ -5,6 +5,7 @@ import threading
 
 import pandas as pd
 import sqlparse
+from PyQt5 import QtCore
 from PyQt5.QtCore import pyqtSignal, QThread
 
 
@@ -39,17 +40,23 @@ class Thread_1(QThread):
 
             def execute_query(server, section, sql, type, name, db_name):
                 connection = connect_to_server(server)
-                if connection:
+                if connection is not None:
                     try:
                         logger.info(f"执行SQL语句：{sql}")
                         result = execute_sql(connection, sql, section, type, db_name, name, None)
                         if result is not None:
                             self.result_queue.put((sql, result))
                     except Exception as e:
+
                         logger.error(f"未完成执行的错误：{section}-{e}")
                         popup_manager.message_signal.emit(f"未完成执行的错误：{section}-{e}")
                     finally:
                         connection.close()
+                else:
+                    err_df = pd.DataFrame(columns=['信息', '服务器组'])
+                    row = {'信息': '发生错误，请检查', '服务器组': section}
+                    err_df = err_df.append(row, ignore_index=True)
+                    self.result_queue.put((sql,err_df))
 
             threads = []
             sql_query, db_name = clean_sql(sql)
@@ -113,6 +120,8 @@ class Thread_1(QThread):
         except Exception as e:
             logger.error(f"执行操作未知错误: {str(e)}")
             popup_manager.message_signal.emit(f"未完成执行的错误:{e}")
+
+
 
 class Thread_2(QThread):
     signal = pyqtSignal()  # 括号里填写信号传递的参数

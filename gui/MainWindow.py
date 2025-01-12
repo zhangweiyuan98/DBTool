@@ -4,7 +4,7 @@ import os
 import queue
 import re
 import threading
-
+import idna
 import pandas as pd
 import sqlparse
 from PyQt5 import QtCore, QtGui
