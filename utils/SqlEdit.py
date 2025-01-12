@@ -115,10 +115,10 @@ class SQLTextEdit(QtWidgets.QTextEdit):
         self.setStyleSheet("""
             QTextEdit {
                 font-family: Consolas, "Courier New", monospace;
-                font-size: 14px;  /* 字体放大一号 */
-                color: #ffffff;  /* 白色字体 */
-                background-color: #1d1d1f;  /* 苹果黑主题背景色 */
-                border: 1px solid #3a3a3c;  /* 深灰色边框 */
+                font-size: 14px;
+                color: #ffffff;
+                background-color: #1d1d1f;
+                border: 1px solid #3a3a3c;
                 border-radius: 6px;
                 padding: 8px;
             }
