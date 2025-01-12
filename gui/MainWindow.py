@@ -915,7 +915,6 @@ class Ui_MainWindow(object):
             self.serverComboBox.setEnabled(True)
 
         except Exception as e:
-            print(f"Error occurred: {str(e)}")
             logger.error(f"Error occurred: {str(e)}")
             popup_manager.message_signal.emit(f"Error occurred: {str(e)}")
 
@@ -947,7 +946,7 @@ class Ui_MainWindow(object):
         except Exception as e:
             print(f"导入数据时出现异常: {e}")
             logger.error(f"导入数据异常: {e}")
-            QMessageBox.information(None, "错误", f"{e}")
+            QMessageBox.information(None, "错误", f"导入数据异常: {e}")
         finally:
             cursor_pms.close()
 
