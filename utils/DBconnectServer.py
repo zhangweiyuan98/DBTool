@@ -1,5 +1,7 @@
 import threading
 import pymysql
+import idna
+
 # from sshtunnel import SSHTunnelForwarder
 
 

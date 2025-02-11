@@ -13,12 +13,13 @@ from PyQt5.QtCore import QTimer
 from PyQt5.QtCore import Qt, QItemSelection, QItemSelectionModel
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QFileDialog, QMenu, QAction, QLabel, QSplitter, QPushButton, \
-    QComboBox, QAbstractItemView, QDialog, QMessageBox
+    QComboBox, QAbstractItemView, QDialog, QMessageBox, QDesktopWidget
 
 from utils.AddConnet import ServerDialog
 from utils.DBconnectServer import popup_manager, connect_to_server
 from utils.DBcrypt import encode_password
 from utils.ExThread import Thread_1, Thread_2
+from utils.Ex_Threads import ExThreadDialog
 from utils.Exdatabases import split_statements, clean_sql, execute_sql, Process_df
 from utils.LargeTableModel import LargeTableModel, ExportThreadCsv, ExportThread
 from utils.ProcessDialog import ProcessDialog
@@ -43,7 +44,19 @@ class Ui_MainWindow(object):
         MainWindow.setWindowTitle("DBtool")
         MainWindow.setWindowIcon(QIcon("resources\icon.ico"))
         MainWindow.setEnabled(True)
-        MainWindow.resize(1024, 768)
+
+        screen = QDesktopWidget().screenGeometry()
+        MainWindow.setGeometry(0, 0, screen.width() * 0.6, screen.height() * 0.5)  # 设置窗口大小为屏幕大小
+        # 获取窗口尺寸
+        window_width = MainWindow.width()
+        window_height = MainWindow.height()
+
+        x = (screen.width() - window_width) // 2
+        y = (screen.height() - window_height) // 2
+
+        # 移动窗口到屏幕中央
+        MainWindow.move(x,y)
+        # MainWindow.resize(1024, 768)
 
         menubar = self.menuBar()
         server_menu = menubar.addMenu("菜单")
@@ -56,6 +69,10 @@ class Ui_MainWindow(object):
         view_pross_action = QAction("看进程", self)
         view_pross_action.triggered.connect(self.open_process_dialog)
         server_menu.addAction(view_pross_action)
+
+        ex_threads = QAction("多线程执行任务", self)
+        ex_threads.triggered.connect(self.open_ex_threads)
+        server_menu.addAction(ex_threads)
 
         # copy_table = QAction("将表复制到不同的主机/数据库...", self)
         # copy_table.triggered.connect(self.copy_table_to)
@@ -450,6 +467,13 @@ class Ui_MainWindow(object):
         execute_group = self.execute_group
         execute_member = self.execute_member
         dialog = ProcessDialog(server_name, execute_member, execute_group, self)
+        dialog.exec_()
+
+    def open_ex_threads(self):
+        server_name = self.serverComboBox.currentText().strip()
+        execute_group = self.execute_group
+        execute_member = self.execute_member
+        dialog = ExThreadDialog(server_name, execute_member, execute_group)
         dialog.exec_()
 
     # def copy_table_to(self):

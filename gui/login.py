@@ -1,5 +1,7 @@
 from PyQt5 import QtCore, QtGui
 from PyQt5 import QtWidgets
+from PyQt5.QtGui import QIcon
+from PyQt5.QtWidgets import QDesktopWidget
 
 from gui.MainWindow import MainWindow
 
@@ -7,26 +9,37 @@ from gui.MainWindow import MainWindow
 class LoginWindow(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle('登录界面')
-
+        self.setWindowTitle('来了老弟')
+        self.setWindowIcon(QIcon("resources\icon.ico"))
         # 设置窗口大小和初始位置
-        self.setGeometry(500, 500, 600, 200)
+        self.setGeometry(0, 0, 600, 200)
+
+        screen = QDesktopWidget().screenGeometry()
+        window_width = self.width()
+        window_height = self.height()
+
+        x = (screen.width() - window_width) // 2
+        y = (screen.height() - window_height) // 2
+
+        # 移动窗口到屏幕中央
+        self.move(x,y)
+
         self.setStyleSheet("background-color: #f5f5f5;")  # 设置背景色
 
         # 使用 QVBoxLayout 来更好的控制布局
         layout = QtWidgets.QVBoxLayout(self)
 
         # 创建一个标题标签
-        self.title_label = QtWidgets.QLabel('欢迎登录', self)
+        self.title_label = QtWidgets.QLabel('最牛就是你了', self)
         self.title_label.setAlignment(QtCore.Qt.AlignCenter)
-        self.title_label.setFont(QtGui.QFont('Segoe UI', 20, QtGui.QFont.Bold))
+        self.title_label.setFont(QtGui.QFont('Arial', 20, QtGui.QFont.Bold))
         layout.addWidget(self.title_label)
 
-        layout.addSpacing(30)  # 加一些间距，使布局更舒服
+        layout.addSpacing(20)
 
         # 用户名
         self.label_username = QtWidgets.QLabel('用户名:', self)
-        self.label_username.setFont(QtGui.QFont('Segoe UI', 12))
+        self.label_username.setFont(QtGui.QFont('Arial', 12))
         layout.addWidget(self.label_username)
 
         self.username_input = QtWidgets.QLineEdit(self)
@@ -37,16 +50,16 @@ class LoginWindow(QtWidgets.QWidget):
                 border: 1px solid #ccc;
                 border-radius: 10px;
                 padding: 10px;
-                font-size: 14px;
+                font-size: 12px;
             }
         """)
         layout.addWidget(self.username_input)
 
-        layout.addSpacing(20)  # 再加些间距
+        layout.addSpacing(10)
 
         # 密码
         self.label_password = QtWidgets.QLabel('密码:', self)
-        self.label_password.setFont(QtGui.QFont('Segoe UI', 12))
+        self.label_password.setFont(QtGui.QFont('Arial', 12))
         layout.addWidget(self.label_password)
 
         self.password_input = QtWidgets.QLineEdit(self)
@@ -58,7 +71,7 @@ class LoginWindow(QtWidgets.QWidget):
                 border: 1px solid #ccc;
                 border-radius: 10px;
                 padding: 10px;
-                font-size: 14px;
+                font-size: 12px;
             }
         """)
         layout.addWidget(self.password_input)
@@ -74,7 +87,7 @@ class LoginWindow(QtWidgets.QWidget):
                 border: none;
                 padding: 12px 20px;
                 text-align: center;
-                font-size: 16px;
+                font-size: 20px;
                 border-radius: 5px;
             }
             QPushButton:hover {
