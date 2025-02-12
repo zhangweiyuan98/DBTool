@@ -1,9 +1,8 @@
 import threading
+from encodings import idna
+
 import pymysql
-import idna
-
 # from sshtunnel import SSHTunnelForwarder
-
 
 from utils.DBcrypt import decode_password
 from gui.PopupManager import  PopupManager
@@ -68,5 +67,5 @@ def connect_to_server(server_config):
         return None
     except Exception as e:
         logger.error(f"其他错误：{e}")
-        popup_manager.message_signal.emit(f"其他错误：{e}")
+        popup_manager.message_signal.emit(f"连接出现其他错误：{e}")
         return None
