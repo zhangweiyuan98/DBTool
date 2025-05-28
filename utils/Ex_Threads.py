@@ -12,7 +12,7 @@ from utils.DBconnectServer import connect_to_server
 from utils.parseconfig import parse_config
 
 # 全局变量，用于控制任务是否继续执行
-is_running = True
+is_running = False
 active_processes = []
 log_lock = threading.Lock()  # 日志锁，确保线程安全
 
@@ -119,6 +119,13 @@ class ExThreadDialog(QDialog):
         self.first_param_input.setFixedWidth(80)
         param_layout.addWidget(self.first_param_input)
 
+        param_layout.addWidget(QLabel("酒店状态:"))
+        self.sta_param_input = QLineEdit()
+        self.sta_param_input.setPlaceholderText("酒店状态")
+        self.sta_param_input.setText("I")  # 默认值
+        self.sta_param_input.setFixedWidth(50)
+        param_layout.addWidget(self.sta_param_input)
+
         control_layout.addLayout(param_layout)
 
         # 任务控制区域（右边）
@@ -165,6 +172,7 @@ class ExThreadDialog(QDialog):
         proc_name = self.proc_name_input.text()
         num_threads = int(self.num_threads_input.text())
         first_param = int(self.first_param_input.text())
+        sta_param = self.sta_param_input.text()
 
         self.log_output.append(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] 任务启动...\n")
 
@@ -180,7 +188,9 @@ class ExThreadDialog(QDialog):
             connection = connect_to_server(server)
             cursor = connection.cursor()
             try:
-                cursor.execute("SELECT id FROM hotel WHERE sta = 'I' ORDER BY id")
+                sql =f"SELECT id FROM hotel WHERE sta = '{sta_param}' ORDER BY id"
+                print(sql)
+                cursor.execute(sql)
                 hotel_ids = [row[0] for row in cursor.fetchall()]  # 获取所有ID
                 self.log_output.append(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] 数据库 {server} 共执行 {len(hotel_ids)} 酒店\n")
                 # 创建任务队列并将ID加入队列
@@ -203,9 +213,12 @@ class ExThreadDialog(QDialog):
     # 检查任务是否全部完成
     def check_tasks_complete(self):
         if all(not thread.isRunning() for thread in self.threads):
+            global is_running
+            is_running = False
             self.log_output.append(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] 所有任务已完成！\n")
             self.start_button.setEnabled(True)  # 启用启动按钮
             self.stop_button.setEnabled(False)  # 禁用停止按钮
+
 
     # 停止任务
     def stop_tasks(self):
@@ -233,3 +246,23 @@ class ExThreadDialog(QDialog):
 
         self.start_button.setEnabled(True)  # 启用启动按钮
         self.stop_button.setEnabled(False)  # 禁用停止按钮
+
+
+    def closeEvent(self, event):
+        global is_running
+        if is_running:
+            # 如果任务正在运行，忽略关闭事件
+            event.ignore()
+        else:
+            # 如果任务没有运行，允许关闭窗口
+            event.accept()
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Escape:
+            # 如果任务正在运行，忽略 Esc 键
+            if is_running:
+                event.ignore()
+            else:
+                super().keyPressEvent(event)
+        else:
+            super().keyPressEvent(event)

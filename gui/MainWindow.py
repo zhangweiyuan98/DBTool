@@ -1,3 +1,4 @@
+import base64
 import configparser
 import datetime
 import os
@@ -10,10 +11,10 @@ from PyQt5 import QtCore, QtGui
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import QTimer
 from PyQt5.QtCore import Qt, QItemSelection, QItemSelectionModel
-from PyQt5.QtGui import QIcon
+from PyQt5.QtGui import QIcon, QClipboard
 from PyQt5.QtWidgets import QFileDialog, QMenu, QAction, QLabel, QSplitter, QPushButton, \
     QComboBox, QAbstractItemView, QDialog, QMessageBox, QDesktopWidget
-
+from PyQt5.QtWidgets import QApplication
 from utils.AddConnet import ServerDialog
 from utils.DBconnectServer import popup_manager, connect_to_server
 from utils.DBcrypt import encode_password
@@ -26,6 +27,7 @@ from utils import logger
 from utils.logger import logger
 from utils.parseconfig import parse_config
 from utils.SqlEdit import SQLTextEdit
+from utils.wehotel_interface_log import wehotel_log_info
 
 
 class Ui_MainWindow(object):
@@ -157,8 +159,9 @@ class Ui_MainWindow(object):
         self.import_button.setEnabled(False)
         self.import_box_Layout.addWidget(self.import_button, 1, 2)
         self.row2Layout.addWidget(self.import_box)
+
         self.sql_box = QtWidgets.QGroupBox("搞SQL脚本", parent=self.centralwidget)
-        self.sql_box_Layout = QtWidgets.QHBoxLayout(self.sql_box)
+        self.sql_box_Layout = QtWidgets.QGridLayout(self.sql_box)
         self.sql_file = QPushButton(parent=self.centralwidget)
         self.sql_file.setText("文件夹")
         self.sql_file.setFont(font)
@@ -172,6 +175,25 @@ class Ui_MainWindow(object):
         self.sqlButton2.clicked.connect(self.execute_sql_scripts)
         self.sql_box_Layout.addWidget(self.sqlButton2)
         self.row2Layout.addWidget(self.sql_box)
+
+        self.other_box = QtWidgets.QGroupBox("其他", parent=self.centralwidget)
+        self.other_box_Layout = QtWidgets.QGridLayout(self.other_box)
+
+        self.hotel_resg = QPushButton(parent=self.centralwidget)
+        self.hotel_resg.setText("生成注册码")
+        self.hotel_resg.setFont(font)
+        self.hotel_resg.clicked.connect(self.get_regs)
+        self.other_box_Layout.addWidget(self.hotel_resg)
+
+        self.wehotellog = QPushButton(parent=self.centralwidget)
+        self.wehotellog.setText("wehotel接口信息")
+        self.wehotellog.setFont(font)
+        self.wehotellog.clicked.connect(self.select_wehotellog)
+        self.other_box_Layout.addWidget(self.wehotellog)
+
+
+        self.row2Layout.addWidget(self.other_box)
+
         self.timeLabel = QLabel()
         self.timeLabel.setFont(font)
         self.end_box = QtWidgets.QGroupBox("开搞", parent=self.centralwidget)
@@ -475,6 +497,11 @@ class Ui_MainWindow(object):
         dialog = ExThreadDialog(server_name, execute_member, execute_group)
         dialog.exec_()
 
+    def select_wehotellog(self):
+        server_name = self.serverComboBox.currentText().strip()
+        dialog = wehotel_log_info(server_name)
+        dialog.exec_()
+
     # def copy_table_to(self):
     #     server_name = self.serverComboBox.currentText().strip()
     #     execute_group = self.execute_group
@@ -696,6 +723,92 @@ class Ui_MainWindow(object):
                     logger.error(f"无法连接到数据库：{e}")
                     return
 
+    def get_regs(self):
+        hotelcode = self.CODE.text()
+        hotelid = self.id.text()
+        server_name = self.serverComboBox.currentText().strip()
+        self.hotel_resg.setText("生成中...")
+
+        config = parse_config(server_name)
+        for section in config.sections():
+            if section == 'group':
+                try:
+                    server = config[section]
+                    # 确保连接使用UTF8编码读取数据
+                    conn = connect_to_server(server)  # 关键修改1
+                    if conn is not None:
+                        try:
+                            with conn.cursor() as cursor:
+                                # 修改SQL移除编码转换
+                                sql = (
+                                    "SELECT a.code, a.descript, "  # 分开获取字段
+                                    "LEFT(b.server_ip, LENGTH(b.server_ip)-LENGTH(SUBSTRING_INDEX(b.server_ip,'/',-1))) AS ip_part "
+                                    "FROM hotel a "
+                                    "JOIN (SELECT server_name,MAX(server_ip) AS server_ip "
+                                    "FROM sync_ip WHERE server_type = 'thef' AND is_local = 'T' GROUP BY server_name) b "
+                                    "ON a.server_name = b.server_name")
+
+                                conditions = []
+                                params = {}  # 改用参数化查询
+                                if hotelcode:
+                                    conditions.append("a.code = %(code)s")
+                                    params['code'] = hotelcode
+                                if hotelid:
+                                    conditions.append("a.id = %(id)s")
+                                    params['id'] = hotelid
+
+                                if conditions:
+                                    sql += " WHERE " + " AND ".join(conditions)
+
+                                cursor.execute(sql, params)
+                                result = cursor.fetchall()
+
+                                if result:
+                                    # 在Python端处理编码转换
+                                    for row in result:
+                                        code = row[0]
+                                        descript = row[1]
+                                        ip_part = row[2]
+
+                                        # 将中文描述转换为GB18030字节
+                                        try:
+                                            descript_gb = descript.encode('gb18030', errors='replace')  # 关键修改2
+                                        except UnicodeEncodeError:
+                                            descript_gb = descript.encode('gb18030', errors='ignore')
+
+                                        # 构建字节序列
+                                        raw_data = '|'.join([code, descript, '|||', ip_part])
+                                        print(raw_data)
+                                        raw_bytes = code.encode('utf-8') + b'|' + descript_gb + b'|||' + ip_part.encode(
+                                            'utf-8')
+
+                                        # 生成Base64
+                                        base64_str = base64.b64encode(raw_bytes).decode('utf-8')
+                                        regs = base64_str.replace('\n', '')  # 移除换行符
+
+                                        # 剪贴板操作
+                                        if not QApplication.instance():
+                                            app = QApplication([])
+                                        clipboard = QApplication.clipboard()
+                                        clipboard.setText(regs)
+
+                                        popup_manager.message_info.emit("注册码生成成功！已复制到剪贴板。")
+                                        break
+                                else:
+                                    popup_manager.message_info.emit("没有找到符合条件的记录。")
+                        except Exception as e:
+                            error_msg = f"注册码生成错误: {str(e)}"
+                            print(error_msg)
+                            popup_manager.message_signal.emit(error_msg)
+                            logger.error(error_msg)
+                        finally:
+                            conn.close()
+                            self.hotel_resg.setText("生成注册码")
+                except Exception as e:
+                    QMessageBox.critical(None, "连接错误", f"无法连接到数据库：{e}")
+                    logger.error(f"连接错误: {e}")
+                    return
+
     def select_excel(self):
         try:
             self.sheet_dropdown.clear()
@@ -894,7 +1007,7 @@ class Ui_MainWindow(object):
                                         for statement in sqlparse.parse(sql_segment):
                                             sql_str = str(statement)
                                             logger.info(f"执行SQL语句：{sql_str}")
-                                            result = execute_sql(connection, sql_str, section, None, None, None)
+                                            result = execute_sql(connection, sql_str, section, None, db_name, None,None)
                                             if result is not None:
                                                 result_queue.put((sql_str, result))
                             except Exception as e:

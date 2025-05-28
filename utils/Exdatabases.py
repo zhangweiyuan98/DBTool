@@ -87,11 +87,24 @@ def create_procedure(connection, section, sql, sql_type, database_name, _name, r
             result = cursor.fetchone()
         except pymysql.err.OperationalError as e:
             error_code, error_message = e.args
-
+            # 触发器不存在：1360
+            # 存储过程不存在：1305
+            # 视图不存在：1146
+            # 函数不存在：1305
             if error_code == 1305:  # 不存在
+                logger.info(f"存储过程/函数不存在")
+                print("存储过程/函数不存在")
+                result = None
+            elif error_code == 1360:
+                logger.info(f"触发器不存在")
+                print("触发器不存在")
+                result = None
+            elif error_code == 1146:
+                logger.info(f"视图不存在")
+                print("视图不存在")
                 result = None
             else:
-                print("存在的")
+
                 raise e
         if result is None:
             # 不存在，直接创建

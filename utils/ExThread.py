@@ -68,6 +68,8 @@ class Thread_1(QThread):
                     server = config[section]
                     # 为每个服务组创建线程
                     if re.search(r"CREATE\s+(?:FUNCTION|PROCEDURE|VIEW|EVENT|TRIGGER)", sql_segment):
+
+
                         # 提取
                         create_pattern = r"CREATE\s+(?:/[*!].*?[*]/\s*)?(?:DEFINER\s*=\s*`[^`]+`@`[^`]+`\s*)?(TRIGGER|PROCEDURE|FUNCTION|VIEW|EVENT)\s+`([a-zA-Z0-9_]+)`"
                         match = re.search(create_pattern, sql_segment)
