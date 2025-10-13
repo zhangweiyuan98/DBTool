@@ -5,16 +5,19 @@ import os
 import queue
 import re
 import threading
+
 import pandas as pd
 import sqlparse
 from PyQt5 import QtCore, QtGui
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import QTimer
 from PyQt5.QtCore import Qt, QItemSelection, QItemSelectionModel
-from PyQt5.QtGui import QIcon, QClipboard
+from PyQt5.QtGui import QIcon
+from PyQt5.QtWidgets import QApplication
 from PyQt5.QtWidgets import QFileDialog, QMenu, QAction, QLabel, QSplitter, QPushButton, \
     QComboBox, QAbstractItemView, QDialog, QMessageBox, QDesktopWidget
-from PyQt5.QtWidgets import QApplication
+
+from utils import logger
 from utils.AddConnet import ServerDialog
 from utils.DBconnectServer import popup_manager, connect_to_server
 from utils.DBcrypt import encode_password
@@ -23,10 +26,9 @@ from utils.Ex_Threads import ExThreadDialog
 from utils.Exdatabases import split_statements, clean_sql, execute_sql, Process_df
 from utils.LargeTableModel import LargeTableModel, ExportThreadCsv, ExportThread
 from utils.ProcessDialog import ProcessDialog
-from utils import logger
+from utils.SqlEdit import SQLTextEdit
 from utils.logger import logger
 from utils.parseconfig import parse_config
-from utils.SqlEdit import SQLTextEdit
 from utils.wehotel_interface_log import wehotel_log_info
 
 
@@ -603,11 +605,11 @@ class Ui_MainWindow(object):
         server = self.serverComboBox.currentText()
         MainWindow.setWindowTitle(_translate("MainWindow", f"DB_Tool-{server} "))
 
-
     def updateWindowTitle(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         server = self.serverComboBox.currentText()
         MainWindow.setWindowTitle(_translate("MainWindow", f"DB_Tool-{server}"))
+
     def startExecution(self):
         """模拟开始执行的过程"""
         self.isRunning = True
@@ -629,7 +631,7 @@ class Ui_MainWindow(object):
         MainWindow.setWindowTitle(_translate("MainWindow", f"DB_Tool- 耗时:{formatted_time}"))
 
     def dorp_table(self,MainWindow):
-        """模拟执行完毕的操作"""
+        """执行完毕的操作"""
         _translate = QtCore.QCoreApplication.translate
         self.isRunning = False
         self.timer.stop()
@@ -912,7 +914,6 @@ class Ui_MainWindow(object):
             export_thread.start()
         except Exception as e:
             print(f"Error occurred while exporting to CSV: {str(e)}")
-
 
     def on_export_finished(self):
         QMessageBox.information(self, "完成", "导出完成!")

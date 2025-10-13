@@ -1,12 +1,13 @@
 import queue
 import threading
 import time
-from PyQt5.QtWidgets import (
-     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QTextEdit, QGroupBox,
-    QDialog
-)
+
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
 from PyQt5.QtGui import QFont, QIcon
+from PyQt5.QtWidgets import (
+    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QTextEdit, QGroupBox,
+    QDialog
+)
 
 from utils.DBconnectServer import connect_to_server
 from utils.parseconfig import parse_config

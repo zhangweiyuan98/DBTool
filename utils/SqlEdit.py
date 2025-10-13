@@ -1,5 +1,6 @@
-from PyQt5 import QtWidgets, QtGui, QtCore
 import re
+
+from PyQt5 import QtWidgets, QtGui, QtCore
 
 # SQL关键字
 keywords = [
@@ -16,7 +17,7 @@ keywords = [
     'PROCEDURE', 'IF', 'EXISTS', 'DEFINER', 'WHILE', 'END', 'BIGINT', 'INT', 'VARCHAR',
     'CHAR', 'TEXT', 'BLOB', 'FLOAT', 'DOUBLE', 'DECIMAL', 'BOOLEAN',
     'TINYINT', 'SMALLINT', 'MEDIUMINT', 'ENUM', 'SET', 'YEAR', 'TIME', 'TIMESTAMP',
-    'AUTO_INCREMENT', 'NOT NULL', 'DEFAULT', 'AFTER', 'BEFORE', 'CURRENT_TIMESTAMP',
+    'NOT NULL', 'DEFAULT', 'AFTER', 'BEFORE', 'CURRENT_TIMESTAMP',
     'CONSTRAINT', 'FULLTEXT', 'ON DELETE', 'ON UPDATE',
     'ASC', 'DESC', 'WITH', 'REPLACE', 'RENAME', 'PARTITION', 'TEMPORARY', 'SAVEPOINT', 'ROLLBACK TO',
     'LOCK', 'UNLOCK', 'WAIT', 'NOWAIT', 'START', 'END', 'DELIMITER', 'WITH', 'RECURSIVE',

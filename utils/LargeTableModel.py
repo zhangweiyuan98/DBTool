@@ -6,8 +6,10 @@ from concurrent.futures import ThreadPoolExecutor
 
 import openpyxl
 from PyQt5 import QtCore
-from utils.logger import logger
+from PyQt5.QtCore import Qt
+
 from utils.DBconnectServer import popup_manager
+from utils.logger import logger
 
 
 class ExportThread(threading.Thread):
@@ -113,12 +115,14 @@ class ExportThreadCsv(threading.Thread):
         # 将数据写入 CSV 文件
         for row_data in chunk_data:
             writer.writerow(row_data)
+
+
 class LargeTableModel(QtCore.QAbstractTableModel):
     def __init__(self, data, headers, parent=None):
         super(LargeTableModel, self).__init__(parent)
         self._data = data if isinstance(data, list) else list(data)
         self._headers = headers
-        self._sort_order = QtCore.Qt.AscendingOrder
+        self._sort_order = Qt.AscendingOrder  # 使用 Qt 而不是 QtCore.Qt
         self._sort_column = -1
 
     def rowCount(self, parent=QtCore.QModelIndex()):
@@ -127,27 +131,30 @@ class LargeTableModel(QtCore.QAbstractTableModel):
     def columnCount(self, parent=QtCore.QModelIndex()):
         return len(self._headers)
 
-    def data(self, index, role=QtCore.Qt.DisplayRole):
+    def data(self, index, role=Qt.DisplayRole):  # 使用 Qt.DisplayRole
         if not index.isValid():
             return None
 
-        if role == QtCore.Qt.DisplayRole:
+        if role == Qt.DisplayRole:
             return str(self._data[index.row()][index.column()])
         return None
 
-    def headerData(self, section, orientation, role=QtCore.Qt.DisplayRole):
-        if role != QtCore.Qt.DisplayRole:
-            return None
-
-        if orientation == QtCore.Qt.Horizontal:
-            return self._headers[section]
-        elif orientation == QtCore.Qt.Vertical:
-            return str(section + 1)
+    def headerData(self, section, orientation, role=Qt.DisplayRole):
+        if role == Qt.DisplayRole:
+            if orientation == Qt.Horizontal:
+                return self._headers[section]
+            elif orientation == Qt.Vertical:
+                # 返回当前行号（从1开始）
+                return str(section + 1)
         return None
 
     def sort(self, column, order):
         self.layoutAboutToBeChanged.emit()
-        self._data.sort(key=lambda row: row[column], reverse=(order == QtCore.Qt.DescendingOrder))
+
+        # 执行排序 - 使用 Qt.DescendingOrder
+        self._data.sort(key=lambda row: row[column], reverse=(order == Qt.DescendingOrder))
+
+        # 更新布局 - 这会自动触发行号更新
         self.layoutChanged.emit()
 
     def appendRow(self, row_data):
@@ -160,3 +167,51 @@ class LargeTableModel(QtCore.QAbstractTableModel):
         self.beginInsertRows(QtCore.QModelIndex(), self.rowCount(), self.rowCount())
         self._data.append(row_data)
         self.endInsertRows()
+
+# class LargeTableModel(QtCore.QAbstractTableModel):
+#     def __init__(self, data, headers, parent=None):
+#         super(LargeTableModel, self).__init__(parent)
+#         self._data = data if isinstance(data, list) else list(data)
+#         self._headers = headers
+#         self._sort_order = QtCore.Qt.AscendingOrder
+#         self._sort_column = -1
+#
+#     def rowCount(self, parent=QtCore.QModelIndex()):
+#         return len(self._data)
+#
+#     def columnCount(self, parent=QtCore.QModelIndex()):
+#         return len(self._headers)
+#
+#     def data(self, index, role=QtCore.Qt.DisplayRole):
+#         if not index.isValid():
+#             return None
+#
+#         if role == QtCore.Qt.DisplayRole:
+#             return str(self._data[index.row()][index.column()])
+#         return None
+#
+#     def headerData(self, section, orientation, role=QtCore.Qt.DisplayRole):
+#         if role != QtCore.Qt.DisplayRole:
+#             return None
+#
+#         if orientation == QtCore.Qt.Horizontal:
+#             return self._headers[section]
+#         elif orientation == QtCore.Qt.Vertical:
+#             return str(section + 1)
+#         return None
+#
+#     def sort(self, column, order):
+#         self.layoutAboutToBeChanged.emit()
+#         self._data.sort(key=lambda row: row[column], reverse=(order == QtCore.Qt.DescendingOrder))
+#         self.layoutChanged.emit()
+#
+#     def appendRow(self, row_data):
+#         """向模型中添加一行数据"""
+#         if isinstance(row_data, tuple):
+#             row_data = list(row_data)
+#         elif not isinstance(row_data, list):
+#             raise ValueError("row_data must be a list or tuple")
+#
+#         self.beginInsertRows(QtCore.QModelIndex(), self.rowCount(), self.rowCount())
+#         self._data.append(row_data)
+#         self.endInsertRows()

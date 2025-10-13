@@ -2,6 +2,7 @@ import re
 
 from PyQt5.QtWidgets import QLineEdit, QHBoxLayout, QLabel, QPushButton, QCheckBox, QFormLayout, QDialog, QMessageBox
 
+
 class ServerDialog(QDialog):
     def __init__(self):
         super().__init__()

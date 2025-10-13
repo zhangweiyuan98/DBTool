@@ -5,3 +5,11 @@ openpyxl==3.0.9
 configparser==5.0.2
 xlrd==2.0.1
 numpy==1.21.6
+cryptography==3.4.8
+paramiko==2.7.2
+sshtunnel==0.1.5
+
+pip install --upgrade "setuptools<60.0.0" "pip<22.0.0"
+pip install cffi==1.14.6 --only-binary :all:
+pip install cryptography==3.4.8 --only-binary :all:
+pip install paramiko==2.7.2 sshtunnel==0.1.5

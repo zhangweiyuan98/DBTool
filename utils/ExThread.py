@@ -6,12 +6,11 @@ import pandas as pd
 import sqlparse
 from PyQt5.QtCore import pyqtSignal, QThread
 
-
 from utils.DBconnectServer import popup_manager, connect_to_server
 from utils.Exdatabases import kill_sql, split_statements, clean_sql, execute_sql
+from utils.logger import logger
 from utils.parseconfig import parse_config
 
-from utils.logger import logger
 
 class Thread_1(QThread):
     signal = pyqtSignal()

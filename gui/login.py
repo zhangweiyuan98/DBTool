@@ -9,7 +9,7 @@ from gui.MainWindow import MainWindow
 class LoginWindow(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle('来了老弟')
+        self.setWindowTitle('DBTool')
         self.setWindowIcon(QIcon("resources\icon.ico"))
         # 设置窗口大小和初始位置
         self.setGeometry(0, 0, 600, 200)
@@ -30,7 +30,7 @@ class LoginWindow(QtWidgets.QWidget):
         layout = QtWidgets.QVBoxLayout(self)
 
         # 创建一个标题标签
-        self.title_label = QtWidgets.QLabel('最牛就是你了', self)
+        self.title_label = QtWidgets.QLabel('Hi,', self)
         self.title_label.setAlignment(QtCore.Qt.AlignCenter)
         self.title_label.setFont(QtGui.QFont('Arial', 20, QtGui.QFont.Bold))
         layout.addWidget(self.title_label)

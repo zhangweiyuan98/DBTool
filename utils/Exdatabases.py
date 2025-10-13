@@ -5,7 +5,6 @@ import pandas as pd
 import pymysql
 import sqlparse
 
-
 from utils.DBconnectServer import popup_manager
 from utils.logger import logger
 
@@ -33,7 +32,6 @@ def split_statements(sql_text):
     statements.append(sql_text[start:].strip())
 
     return statements
-
 
 def clean_sql(sql):
     """规则"""
@@ -71,7 +69,6 @@ def create_procedure(connection, section, sql, sql_type, database_name, _name, r
     check_proc_exist_sql = ''
     if create_index != -1:
         String_sql = sql[create_index:]
-    try:
         cursor = connection.cursor()
         if sql_type == 'PROCEDURE':
             check_proc_exist_sql = f"SHOW CREATE PROCEDURE {database_name}{_name} ;"
@@ -108,16 +105,23 @@ def create_procedure(connection, section, sql, sql_type, database_name, _name, r
                 raise e
         if result is None:
             # 不存在，直接创建
-            print(f"直接创建：{database_name}{String_sql}")
-            cursor.execute(String_sql)
-            print("创建完成")
-            # connection.commit()
-            temp_df = pd.DataFrame(
-                {'db_name': [database_name.replace(".", "")], sql_type: [_name], '执行结果': ['成功'],
-                 '服务器组': [section]})
-            result_df = pd.concat([result_df, temp_df], ignore_index=True)
-            print(f"{section}：{database_name}.{_name}：创建成功")
-            logger.info(f"{section}：{database_name}.{_name}：创建成功")
+            try:
+                print(f"直接创建：{database_name}{String_sql}")
+                cursor.execute(String_sql)
+                print("创建完成")
+                # connection.commit()
+                temp_df = pd.DataFrame(
+                    {'db_name': [database_name.replace(".", "")], sql_type: [_name], '执行结果': ['成功'],
+                     '服务器组': [section]})
+                result_df = pd.concat([result_df, temp_df], ignore_index=True)
+                print(f"{section}：{database_name}.{_name}：创建成功")
+                logger.info(f"{section}：{database_name}.{_name}：创建成功")
+            except Exception as e:
+                logger.error(f"{section}：{database_name}{_name}：创建失败: {e}")
+                temp_df = pd.DataFrame({'执行结果': [f'创建失败:{str(e)}'], '服务器组': [section]})
+                result_df = pd.concat([result_df, temp_df], ignore_index=True)
+            finally:
+                cursor.close()
         else:
             print(f"{database_name}{_name}已经存在")
             if sql_type == 'PROCEDURE':
@@ -128,28 +132,22 @@ def create_procedure(connection, section, sql, sql_type, database_name, _name, r
                 cursor.execute(f"DROP TRIGGER IF EXISTS {database_name}{_name} ;")
             print(f"{database_name}{_name}已经删除")
             print(f"执行{String_sql}")
-            cursor.execute(String_sql)
-            connection.commit()
-            temp_df = pd.DataFrame(
-                {'db_name': [database_name.replace(".", "")], sql_type: [_name], '执行结果': ['成功'],
-                 '服务器组': [section]})
-            result_df = pd.concat([result_df, temp_df], ignore_index=True)
-            print(f"{database_name}{_name}已经更新")
-            logger.info(f"{section}：{database_name}{_name}：更新成功")
-
-        cursor.close()
-    except pymysql.err.InternalError as e:
-        error_code, error_message = e.args
-        logger.error(f"{section}：{database_name}{_name}：操作失败: {error_message}")
-        popup_manager.message_signal.emit(
-            f"{section}：{database_name}{_name}：操作失败: {error_message}")
-
-        temp_df = pd.DataFrame({'执行结果': [f'失败:{str(error_message)}'], '服务器组': [section]})
-        result_df = pd.concat([result_df, temp_df], ignore_index=True)
-
+            try:
+                cursor.execute(String_sql)
+                temp_df = pd.DataFrame(
+                    {'db_name': [database_name.replace(".", "")], sql_type: [_name], '执行结果': ['成功'],
+                     '服务器组': [section]})
+                result_df = pd.concat([result_df, temp_df], ignore_index=True)
+                print(f"{database_name}{_name}已经更新")
+                logger.info(f"{section}：{database_name}{_name}：更新成功")
+            except Exception as e:
+                logger.error(f"{section}：{database_name}{_name}：更新失败: {e}")
+                temp_df = pd.DataFrame({'执行结果': [f'更新失败:{str(e)}'], '服务器组': [section]})
+                result_df = pd.concat([result_df, temp_df], ignore_index=True)
+            finally:
+                cursor.close()
 
     return result_df
-
 
 def execute_sql(connection, sql, section, type, db_name, _name, result_df):
     """执行sql语句"""

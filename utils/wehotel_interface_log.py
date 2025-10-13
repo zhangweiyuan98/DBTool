@@ -1,14 +1,17 @@
 
-from xml.dom.minidom import parseString
 import xml.parsers.expat
+from xml.dom.minidom import parseString
+
+from PyQt5.QtCore import Qt, QDateTime, QSize, QRect, QRegExp
 from PyQt5.QtGui import QIcon, QPainter, QFont, QColor, QTextCharFormat, QSyntaxHighlighter
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout,
                              QLabel, QLineEdit, QComboBox, QPushButton, QTableWidget,
                              QTableWidgetItem, QDialog, QMessageBox, QDateTimeEdit, QPlainTextEdit
                              )
-from PyQt5.QtCore import Qt, QDateTime, QSize, QRect, QRegExp
+
 from utils.DBconnectServer import connect_to_server
 from utils.parseconfig import parse_config
+
 
 class wehotel_log_info(QDialog):
     def __init__(self,server_name):
@@ -68,7 +71,7 @@ class wehotel_log_info(QDialog):
         lbl_model = QLabel("所属模块:")
         self.cmb_model = QComboBox()
         self.cmb_model.addItems([
-            "", "CRS_RESRV", "MASTER", "PMS_RESRV",
+            "", "CRS_RESRV", "MASTER", "PMS_RESRV","RATE_CODE",
             "RATE_DETAIL", "COMPANY", "ACCOUNT", "RTAV", "RENTAL_RATE"
         ])
         input_layout.addWidget(lbl_model)
@@ -82,7 +85,7 @@ class wehotel_log_info(QDialog):
             "getfeedetail", "partyresv", "sendalert", "updaterates",
             "updatesalesid", "getagreementinfo", "getunclosedauditstatus",
             "pmsresv", "resvrefund", "updateauditstatus", "updateavail",
-            "updatefeedetail", "updateoccupancyrate"
+            "updatefeedetail", "updateoccupancyrate","updaterateinfo"
         ])
         input_layout.addWidget(lbl_msg_type)
         input_layout.addWidget(self.cmb_msg_type)
@@ -256,7 +259,7 @@ class wehotel_log_info(QDialog):
                             dialog.resize(1000, 800)
 
                             editor = XmlEditor(dialog)
-                            editor.setFont(QFont("Consolas", 10))
+                            editor.setFont(QFont("Arial", 10))
                             editor.setPlainText(content)
 
                             layout = QVBoxLayout(dialog)

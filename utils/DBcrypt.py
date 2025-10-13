@@ -15,3 +15,10 @@ def decode_password(password):
     password_bytes = base64.b64decode(encoded_bytes)
     decoded_str = password_bytes.decode('utf-8')
     return decoded_str[:-4]
+
+print(decode_password("Smppbm5AQ2xvdWQyMDE5RGJpdGFxYSY="))
+print(decode_password("MjQwLmRldmlza2FpZmFhcWEm"))
+print(decode_password("UVJzMHM5U1ppN21rNWRtNGFxYSY="))
+print(decode_password("Smppbm5AR3JlZW5jbG91ZDIwMjBhcWEm"))
+
+# print(encode_password("deviskaifa"))
